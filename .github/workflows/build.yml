@@ -47,7 +47,7 @@ jobs:
     - name: Install frontend deps
       working-directory: ./frontend
       run: |
-        pnpm install --frozen-lockfile
+        pnpm install
         pnpm build
 
     # 7. 构建 Wails 可执行文件
