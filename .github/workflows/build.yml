@@ -3,8 +3,7 @@ name: Build App
 on:
   push:
     tags:
-      - main
-      - release/*
+      - "v*"
   workflow_dispatch: # 允许手动触发
 
 jobs:
@@ -13,45 +12,55 @@ jobs:
 
     strategy:
       matrix:
-        platform: [windows, darwin]  # 三个平台构建
-        arch: [amd64]
+        platform: [ windows, darwin,linux ]  # 三个平台构建
+        arch: [ amd64 ]
 
     steps:
-    # 1. 拉取仓库
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # 拉取仓库
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # 2. 安装 Go
-    - name: Setup Go
-      uses: actions/setup-go@v6
-      with:
-        go-version: stable
+      # 安装 Go
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
 
-    # 3. 安装 Node.js
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      # 安装 Node.js
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    # 4. 安装 pnpm
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 8 # 根据你的项目锁定版本
+      # 安装 pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8 # 根据你的项目锁定版本
 
-    # 5. 安装 Wails CLI
-    - name: Install Wails
-      run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+      # 安装 Wails CLI
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-    # 6. 构建 Wails 可执行文件
-    - name: Build Wails App
-      run: |
-        export PATH=$PATH:$(go env GOPATH)/bin
-        wails build -platform ${{ matrix.platform }}/${{ matrix.arch }}
+      # 安装linux依赖
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libglib2.0-dev pkg-config  
 
-    # 7. 上传构建结果到 GitHub Actions Artifact
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: PulsarDesk-${{ matrix.platform }}-${{ matrix.arch }}
-        path: ./build/bin/
+      # 构建 Wails 可执行文件
+      - name: Build Wails App
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          wails build -platform ${{ matrix.platform }}/${{ matrix.arch }}
+
+      # 上传构建至release
+      - name: Create Release & Upload
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: build/bin/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
