@@ -54,7 +54,7 @@ jobs:
     - name: Build Wails App
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
-        wails build -p ${{ matrix.platform }} -a ${{ matrix.arch }}
+        wails build -platform ${{ matrix.platform }}/${{ matrix.arch }}
 
     # 8. 上传构建结果到 GitHub Actions Artifact
     - name: Upload build artifacts
