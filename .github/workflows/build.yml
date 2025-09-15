@@ -1,0 +1,58 @@
+name: Build App
+
+on:
+  push:
+    tags:
+      - main
+      - release/*
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        platform: [windows, linux, darwin]  # 三个平台构建
+        arch: [amd64]
+
+    steps:
+    # 1. 拉取仓库
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. 安装 Go
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: stable
+
+    # 3. 安装 Node.js
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    # 4. 安装 Wails CLI
+    - name: Install Wails
+      run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+    # 5. 安装前端依赖并构建
+    - name: Install frontend deps
+      working-directory: ./frontend
+      run: |
+        npm ci
+        npm run build
+
+    # 6. 构建 Wails 可执行文件
+    - name: Build Wails App
+      run: |
+        export PATH=$PATH:$(go env GOPATH)/bin
+        wails build -p ${{ matrix.platform }} -a ${{ matrix.arch }}
+
+    # 7. 上传构建结果到 GitHub Actions Artifact
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: PulsarDesk-${{ matrix.platform }}-${{ matrix.arch }}
+        path: build/bin/
