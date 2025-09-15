@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        platform: [windows, linux, darwin]  # 三个平台构建
+        platform: [windows, darwin]  # 三个平台构建
         arch: [amd64]
 
     steps:
@@ -43,22 +43,15 @@ jobs:
     - name: Install Wails
       run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-    # 6. 安装前端依赖并构建
-    - name: Install frontend deps
-      working-directory: ./frontend
-      run: |
-        pnpm install
-        pnpm build
-
-    # 7. 构建 Wails 可执行文件
+    # 6. 构建 Wails 可执行文件
     - name: Build Wails App
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
         wails build -platform ${{ matrix.platform }}/${{ matrix.arch }}
 
-    # 8. 上传构建结果到 GitHub Actions Artifact
+    # 7. 上传构建结果到 GitHub Actions Artifact
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: PulsarDesk-${{ matrix.platform }}-${{ matrix.arch }}
-        path: build/bin/
+        path: ./build/bin/
