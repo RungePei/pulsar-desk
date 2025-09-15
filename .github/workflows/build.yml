@@ -32,25 +32,32 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+        cache: 'pnpm'
 
-    # 4. 安装 Wails CLI
+    # 4. 安装 pnpm
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8 # 根据你的项目锁定版本
+
+    # 5. 安装 Wails CLI
     - name: Install Wails
       run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-    # 5. 安装前端依赖并构建
+    # 6. 安装前端依赖并构建
     - name: Install frontend deps
       working-directory: ./frontend
       run: |
-        npm ci
-        npm run build
+        pnpm install --frozen-lockfile
+        pnpm build
 
-    # 6. 构建 Wails 可执行文件
+    # 7. 构建 Wails 可执行文件
     - name: Build Wails App
       run: |
         export PATH=$PATH:$(go env GOPATH)/bin
         wails build -p ${{ matrix.platform }} -a ${{ matrix.arch }}
 
-    # 7. 上传构建结果到 GitHub Actions Artifact
+    # 8. 上传构建结果到 GitHub Actions Artifact
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
